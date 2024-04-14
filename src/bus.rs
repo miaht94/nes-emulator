@@ -1,4 +1,4 @@
-trait Memory {
+pub trait Memory {
     fn mem_read(&self, address: u16) -> u8;
     fn mem_write(&mut self, address: u16, value: u8);
     fn mem_read_u16(&self, address: u16) -> u16;
@@ -10,10 +10,14 @@ const RAM_MIRRORS_END: u16 = 0x1FFF;
 const PPU_REGISTERS: u16 = 0x2000;
 const PPU_REGISTERS_MIRRORS_END: u16 = 0x3FFF;
 
-struct Bus {
+pub struct Bus {
     cpu_vram: [u8; 0x800]
 }
 impl Bus { 
+    pub fn new() -> Self {
+        Bus { cpu_vram: [0; 0x800] }
+    }
+
     fn get_real_address(&self, address: u16) -> usize { 
         let address = match address {
             RAM ..= RAM_MIRRORS_END => address & 0b111_1111_1111,
@@ -24,7 +28,7 @@ impl Bus {
             _ => panic!("Ignoring memory access at {}", address)
         };
         address as usize
-    }
+    } 
 }
 impl Memory for Bus {
     fn mem_read(&self, address: u16) -> u8 {
@@ -34,7 +38,7 @@ impl Memory for Bus {
 
     fn mem_write(&mut self, address: u16, value: u8) {
         let address: usize = self.get_real_address(address);
-        self.cpu_vram[address] = value        
+        self.cpu_vram[address] = value
     }
     
     fn mem_read_u16(&self, address: u16) -> u16 {

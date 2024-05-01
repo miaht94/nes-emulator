@@ -18,27 +18,40 @@ impl Bus {
         Bus { cpu_vram: [0; 0x800] }
     }
 
-    fn get_real_address(&self, address: u16) -> usize { 
+    fn get_real_address(&self, address: u16) -> Option<usize> { 
         let address = match address {
-            RAM ..= RAM_MIRRORS_END => address & 0b111_1111_1111,
+            RAM ..= RAM_MIRRORS_END => Some((address & 0b111_1111_1111) as usize),
             PPU_REGISTERS ..= PPU_REGISTERS_MIRRORS_END => {
                 address & 0b0010_0000_0000_0111;
                 todo!("Not implemented")
             },
-            _ => panic!("Ignoring memory access at {}", address)
+            _ => None
         };
-        address as usize
+        address
     } 
 }
 impl Memory for Bus {
     fn mem_read(&self, address: u16) -> u8 {
-        let address = self.get_real_address(address);
-        self.cpu_vram[address]
+        let real_address = self.get_real_address(address);
+        match real_address {
+            Some(address) => self.cpu_vram[address],
+            None => {
+                println!("Ignore read memory outside CPU memory at: {}", address);
+                0
+            }
+        }
+        
     }
 
     fn mem_write(&mut self, address: u16, value: u8) {
-        let address: usize = self.get_real_address(address);
-        self.cpu_vram[address] = value
+        let real_address = self.get_real_address(address);
+        match real_address {
+            Some(address) => {
+                self.cpu_vram[address] = value;
+                println!("Mem write at {:x} - value: {:x}", address, value)
+            },
+            None => {/* ignore */}
+        }
     }
     
     fn mem_read_u16(&self, address: u16) -> u16 {
